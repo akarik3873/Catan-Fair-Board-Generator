@@ -1,0 +1,17 @@
+import tkinter as tk
+from tkinter import PhotoImage
+import Random_Board_without_Center_Desert
+
+
+#create board
+window = tk.Tk()
+window.title("Catan Board")
+window.geometry("600x600")
+
+#hex image
+hexagon = PhotoImage(file="")
+
+def draw_hex():
+    hex = tk.Label(window, image="")
+
+window.mainloop()
