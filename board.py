@@ -20,13 +20,24 @@ class Side:
 
 class Board:
     def __init__(self):
-        self.ports = [
-                ["Water", "Water", "Wood", "Wood", "Water"],
-                ["Wheat", "Wheat", "Water", "Water", "Water"],
-                ["Water", "Water", "Stone", "Stone", "Water"],
-                ["Sheep", "Sheep", "Water", "Water", "Water"],
-                ["Water", "Water", "Water", "Water", "Water"],
-                ["Brick", "Brick", "Water", "Water", "Water"]]
+        # where each port physically sits on the frame piece — for drawing
+        self.ports_visual = [
+                ["Sheep", "Sheep", "Water", "3:1",  "3:1"],    # piece 1
+                ["Water", "Water", "3:1",  "3:1",  "Water"],   # piece 2
+                ["Brick", "Brick", "Water", "3:1",  "3:1"],    # piece 3
+                ["Water", "Water", "Wood",  "Wood", "Water"],  # piece 4
+                ["Wheat", "Wheat", "Water", "3:1",  "3:1"],    # piece 5
+                ["Water", "Water", "Stone", "Stone", "Water"]] # piece 6
+
+        # which coastal slots each port touches (corner pier claims both
+        # edges, so the end 2:1s reach a third slot) — for the checks
+        self.ports_checks = [
+                ["Sheep", "Sheep", "Sheep", "3:1",  "3:1"],    # piece 1
+                ["Water", "Water", "3:1",  "3:1",  "Water"],   # piece 2
+                ["Brick", "Brick", "Brick", "3:1",  "3:1"],    # piece 3
+                ["Water", "Water", "Wood",  "Wood", "Water"],  # piece 4
+                ["Wheat", "Wheat", "Wheat", "3:1",  "3:1"],    # piece 5
+                ["Water", "Water", "Stone", "Stone", "Water"]] # piece 6
 
 
         #creates the board
@@ -93,11 +104,14 @@ class Board:
             i.sides[0].adj_side = [i.sides[3],i.sides[1]]
             i.sides[3].adj_side = [i.sides[0],i.sides[5]]
 
-        # establishing the ports
-        random.shuffle(self.ports)
+        # establishing the ports — shuffle piece order once so the visual
+        # and check arrays stay in sync, then wire the check slots to sides
+        order = list(range(6))
+        random.shuffle(order)
+        self.ports = [self.ports_visual[k] for k in order]
         ports = []
-        for i in self.ports:
-            ports.extend(i)
+        for k in order:
+            ports.extend(self.ports_checks[k])
         number = 0
         for i in range(6, 17):
             self.board[i].sides[2].tile  = ports[number]
