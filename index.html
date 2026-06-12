@@ -264,22 +264,30 @@ function drawBoard(data) {
   });
 
   // ---- ports ----
-  // Adjacent same-resource coastal edges form one two-dock port.
-  const ports = data.ports;
+  // data.ports lists the 30 coastal edges in ring order, starting at
+  // tile 6 side 2. Runs of the same resource form one multi-dock port.
+  const EDGE_SLOTS = [];
+  for (let t = 6; t < 18; t++) {
+    for (const s of (t % 2 === 0 ? [2, 3, 4] : [2, 4])) EDGE_SLOTS.push([t, s]);
+  }
+  const GENERIC = { fill: '#f3e9d2', edge: '#7a6747', label: '3:1' };
+  const edges = (data.ports || []).slice(0, EDGE_SLOTS.length).map((resource, i) =>
+    ({ resource, tile: EDGE_SLOTS[i][0], side: EDGE_SLOTS[i][1] }));
   let delay = 700;
-  for (let i = 0; i < ports.length; i++) {
-    if (ports[i].resource === 'Water') continue;
-    const pair = [ports[i]];
-    if (i + 1 < ports.length && ports[i + 1].resource === ports[i].resource) {
-      pair.push(ports[++i]);
+  for (let i = 0; i < edges.length; i++) {
+    if (edges[i].resource === 'Water') continue;
+    const run = [edges[i]];
+    while (i + 1 < edges.length && edges[i + 1].resource === edges[i].resource) {
+      run.push(edges[++i]);
     }
 
-    const res = RES[pair[0].resource];
+    const res = RES[run[0].resource] || GENERIC;
+    const generic = !RES[run[0].resource];
     const g = el('g', { class: 'port-g', style: `animation-delay:${delay}ms` }, svg);
     delay += 90;
 
     let lx = 0, ly = 0;
-    for (const p of pair) {
+    for (const p of run) {
       const [cx, cy] = toPixel(axialOf(p.tile));
       const [dq, dr] = waterDir(p.tile, p.side);
       const ox = SQ3 * S * (dq + dr / 2), oy = 1.5 * S * dr;
@@ -292,12 +300,23 @@ function drawBoard(data) {
       lx += cx + ox * 0.92;
       ly += cy + oy * 0.92;
     }
-    lx /= pair.length; ly /= pair.length;
+    lx /= run.length; ly /= run.length;
 
     el('circle', { cx: lx, cy: ly, r: 13, fill: '#f3e9d2', stroke: res.edge, 'stroke-width': 2.5 }, g);
-    el('circle', { cx: lx, cy: ly, r: 7.5, fill: res.fill, stroke: res.edge, 'stroke-width': 1 }, g);
+    if (generic) {
+      const t31 = el('text', {
+        x: lx, y: ly + 1,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        'font-family': 'Alegreya, serif', 'font-weight': 700,
+        'font-size': 9.5, fill: '#5b4a2a',
+      }, g);
+      t31.textContent = run[0].resource;
+    } else {
+      el('circle', { cx: lx, cy: ly, r: 7.5, fill: res.fill, stroke: res.edge, 'stroke-width': 1 }, g);
+    }
     const title = el('title', {}, g);
-    title.textContent = res.label + ' port (2:1)';
+    title.textContent = generic ? run[0].resource + ' port'
+                                : res.label + ' port (2:1)';
   }
 }
 
@@ -305,7 +324,7 @@ function drawLegend() {
   const lg = document.getElementById('legend');
   lg.innerHTML = Object.values(RES)
     .map(r => `<span><i style="background:${r.fill}"></i>${r.label}</span>`)
-    .join('') + `<span><i style="background:#f3e9d2"></i>Port (2:1)</span>`;
+    .join('') + `<span><i style="background:#f3e9d2"></i>Port (2:1 colored, 3:1 marked)</span>`;
 }
 
 // ---- generation backends ----
@@ -338,9 +357,7 @@ def _generate():
         b = board.Board()
         b.board_generator()
     tiles = [{"id": t.tilenum, "type": t.type, "number": t.number} for t in b.board]
-    ports = [{"tile": i, "side": s, "resource": b.board[i].sides[s].tile}
-             for i in range(6, 18) for s in (2, 3, 4)
-             if isinstance(b.board[i].sides[s].tile, str)]
+    ports = [slot for piece in b.ports for slot in piece]
     return json.dumps({"tiles": tiles, "ports": ports})
 `);
     return py;

@@ -28,15 +28,9 @@ def generate_board():
         for t in b.board
     ]
 
-    # Ports live on the outward-facing sides (2, 3, 4) of the coastal ring,
-    # stored as plain strings. Collect them in the same coastal order the
-    # generator assigned them so adjacent pairs stay adjacent.
-    ports = []
-    for i in range(6, 18):
-        for s in (2, 3, 4):
-            v = b.board[i].sides[s].tile
-            if isinstance(v, str):
-                ports.append({"tile": i, "side": s, "resource": v})
+    # b.ports is the shuffled visual frame: 6 pieces x 5 slots = the 30
+    # coastal edges in ring order, starting at tile 6 side 2.
+    ports = [slot for piece in b.ports for slot in piece]
 
     return {"tiles": tiles, "ports": ports}
 
