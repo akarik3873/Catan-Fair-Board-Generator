@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catan — Fair Board Forge</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,3 93,27 93,73 50,97 7,73 7,27' fill='%23dcae3c' stroke='%239d7a1f' stroke-width='6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sea-deep: #0b2433;
+    --sea-mid: #123649;
+    --parchment: #f3e9d2;
+    --parchment-dim: #d8c9a3;
+    --ink: #2b1f10;
+    --gold: #c9a14a;
+    --red: #b03a2e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 38%, var(--sea-mid) 0%, var(--sea-deep) 70%),
+      var(--sea-deep);
+    color: var(--parchment);
+    font-family: 'Alegreya', Georgia, serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* grain overlay for a printed-chart feel */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none;
+    opacity: .07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  header {
+    text-align: center;
+    padding: 2.2rem 1rem 0.4rem;
+  }
+
+  header .rule {
+    display: inline-block;
+    color: var(--gold);
+    letter-spacing: .55em;
+    font-size: .72rem;
+    text-transform: uppercase;
+    opacity: .85;
+  }
+
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-weight: 900;
+    font-size: clamp(1.7rem, 4.5vw, 2.9rem);
+    letter-spacing: .06em;
+    color: var(--parchment);
+    text-shadow: 0 2px 0 rgba(0,0,0,.45), 0 0 36px rgba(201,161,74,.25);
+    margin: .25rem 0 .1rem;
+  }
+
+  .subtitle {
+    font-style: italic;
+    color: var(--parchment-dim);
+    font-size: 1.02rem;
+  }
+
+  button#forge {
+    margin: 1.1rem auto 0;
+    display: inline-block;
+    font-family: 'Cinzel Decorative', serif;
+    font-weight: 700;
+    font-size: .95rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: linear-gradient(180deg, #f7eed9 0%, #e2d3ab 55%, #cdb986 100%);
+    border: 1px solid #8a743f;
+    border-radius: 3px;
+    padding: .8rem 2.6rem;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 18px rgba(0,0,0,.45);
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  }
+  button#forge:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 10px 24px rgba(0,0,0,.5); }
+  button#forge:active { transform: translateY(0); }
+  button#forge:disabled { filter: grayscale(.4) brightness(.85); cursor: wait; transform: none; }
+
+  #board-wrap {
+    width: min(92vmin, 760px);
+    margin: .6rem 0 0;
+  }
+  svg { width: 100%; height: auto; display: block; }
+
+  /* tile pop-in */
+  .tile-g {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pop .5s cubic-bezier(.2, 1.4, .4, 1) both;
+  }
+  @keyframes pop {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .port-g {
+    animation: fadein .6s ease both;
+  }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .4rem 1.4rem;
+    padding: .4rem 1rem 2.4rem;
+    font-size: .95rem;
+    color: var(--parchment-dim);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: .45em; }
+  .legend i {
+    width: .85em; height: .85em;
+    display: inline-block;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,.5);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="rule">A FAIR ISLAND, EVERY TIME</span>
+  <h1>The Board Forge</h1>
+  <div class="subtitle">Press the button — the generator charts a balanced isle of Catan.</div>
+  <button id="forge">Forge a New Isle</button>
+</header>
+
+<div id="board-wrap">
+  <svg id="board" viewBox="-330 -330 660 660" role="img" aria-label="Generated Catan board"></svg>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const S = 52;                       // hex size (center to corner)
+const SQ3 = Math.sqrt(3);
+
+// Axial hex directions, in the same order the generator's adjacency uses.
+const DIRS = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
+
+const RES = {
+  Wheat:  { fill: '#dcae3c', edge: '#9d7a1f', label: 'Wheat'  },
+  Sheep:  { fill: '#a8c46a', edge: '#6e8a3a', label: 'Sheep'  },
+  Wood:   { fill: '#3f7547', edge: '#24492c', label: 'Wood'   },
+  Brick:  { fill: '#bf5b3a', edge: '#7e3520', label: 'Brick'  },
+  Stone:  { fill: '#8b9197', edge: '#565c63', label: 'Stone'  },
+  Desert: { fill: '#d6c391', edge: '#a18d5c', label: 'Desert' },
+};
+
+// tile id -> axial coordinate.
+// 18 = center, 0-5 = inner ring, 6-17 = outer ring
+// (even outer ids are corners aligned with inner tile (id-6)/2,
+//  odd outer ids sit on the edge between two corners).
+function axialOf(id) {
+  if (id === 18) return [0, 0];
+  if (id < 6) return DIRS[id];
+  const k = (id - 6) >> 1;
+  if (id % 2 === 0) return [2 * DIRS[k][0], 2 * DIRS[k][1]];
+  const n = DIRS[(k + 1) % 6];
+  return [DIRS[k][0] + n[0], DIRS[k][1] + n[1]];
+}
+
+function toPixel([q, r]) {
+  return [SQ3 * S * (q + r / 2), 1.5 * S * r];
+}
+
+function hexPoints(cx, cy, s) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i - 30);
+    pts.push((cx + s * Math.cos(a)).toFixed(2) + ',' + (cy + s * Math.sin(a)).toFixed(2));
+  }
+  return pts.join(' ');
+}
+
+// Which water direction a port side faces, for coastal tile `tile`.
+function waterDir(tile, side) {
+  const k = (tile - 6) >> 1;
+  const off = tile % 2 === 0 ? { 2: 5, 3: 0, 4: 1 }[side] : { 2: 0, 4: 1 }[side];
+  return DIRS[(k + off) % 6];
+}
+
+function el(name, attrs, parent) {
+  const e = document.createElementNS(SVG_NS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function drawBoard(data) {
+  const svg = document.getElementById('board');
+  svg.innerHTML = '';
+
+  // sea backdrop hexagon
+  const defs = el('defs', {}, svg);
+  defs.innerHTML = `
+    <radialGradient id="sea" cx="50%" cy="42%" r="65%">
+      <stop offset="0%"  stop-color="#1c4a61"/>
+      <stop offset="100%" stop-color="#0e2c3d"/>
+    </radialGradient>`;
+  el('polygon', {
+    points: hexPoints(0, 0, S * 5.35),
+    fill: 'url(#sea)', stroke: '#cfa75355', 'stroke-width': 2,
+    transform: 'rotate(30)',
+  }, svg);
+
+  // ---- tiles ----
+  data.tiles.forEach((t, i) => {
+    const [cx, cy] = toPixel(axialOf(t.id));
+    const res = RES[t.type] || { fill: '#444', edge: '#222' };
+    const g = el('g', { class: 'tile-g', style: `animation-delay:${i * 35}ms` }, svg);
+
+    el('polygon', { points: hexPoints(cx, cy, S * 0.97), fill: res.edge }, g);
+    el('polygon', { points: hexPoints(cx, cy, S * 0.88), fill: res.fill }, g);
+    el('polygon', {
+      points: hexPoints(cx, cy, S * 0.88),
+      fill: 'none', stroke: 'rgba(255,255,255,.18)', 'stroke-width': 1.5,
+    }, g);
+
+    // number token (desert / 7 has none)
+    if (t.type !== 'Desert' && t.number !== 7) {
+      el('circle', {
+        cx, cy, r: 17.5,
+        fill: '#f3e9d2', stroke: '#a8946a', 'stroke-width': 1.5,
+      }, g);
+      const hot = t.number === 6 || t.number === 8;
+      const txt = el('text', {
+        x: cx, y: cy + 1.5,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        'font-family': 'Alegreya, serif', 'font-weight': 700,
+        'font-size': hot ? 19 : 17,
+        fill: hot ? '#b03a2e' : '#2b1f10',
+      }, g);
+      txt.textContent = t.number;
+      // probability pips
+      const pips = 6 - Math.abs(7 - t.number);
+      for (let p = 0; p < pips; p++) {
+        el('circle', {
+          cx: cx + (p - (pips - 1) / 2) * 4.4,
+          cy: cy + 11.5,
+          r: 1.3,
+          fill: hot ? '#b03a2e' : '#2b1f10',
+        }, g);
+      }
+    }
+  });
+
+  // ---- ports ----
+  // Adjacent same-resource coastal edges form one two-dock port.
+  const ports = data.ports;
+  let delay = 700;
+  for (let i = 0; i < ports.length; i++) {
+    if (ports[i].resource === 'Water') continue;
+    const pair = [ports[i]];
+    if (i + 1 < ports.length && ports[i + 1].resource === ports[i].resource) {
+      pair.push(ports[++i]);
+    }
+
+    const res = RES[pair[0].resource];
+    const g = el('g', { class: 'port-g', style: `animation-delay:${delay}ms` }, svg);
+    delay += 90;
+
+    let lx = 0, ly = 0;
+    for (const p of pair) {
+      const [cx, cy] = toPixel(axialOf(p.tile));
+      const [dq, dr] = waterDir(p.tile, p.side);
+      const ox = SQ3 * S * (dq + dr / 2), oy = 1.5 * S * dr;
+      // dock line: from hex edge out into the sea
+      el('line', {
+        x1: cx + ox * 0.46, y1: cy + oy * 0.46,
+        x2: cx + ox * 0.78, y2: cy + oy * 0.78,
+        stroke: '#e8d9b5', 'stroke-width': 3, 'stroke-linecap': 'round',
+      }, g);
+      lx += cx + ox * 0.92;
+      ly += cy + oy * 0.92;
+    }
+    lx /= pair.length; ly /= pair.length;
+
+    el('circle', { cx: lx, cy: ly, r: 13, fill: '#f3e9d2', stroke: res.edge, 'stroke-width': 2.5 }, g);
+    el('circle', { cx: lx, cy: ly, r: 7.5, fill: res.fill, stroke: res.edge, 'stroke-width': 1 }, g);
+    const title = el('title', {}, g);
+    title.textContent = res.label + ' port (2:1)';
+  }
+}
+
+function drawLegend() {
+  const lg = document.getElementById('legend');
+  lg.innerHTML = Object.values(RES)
+    .map(r => `<span><i style="background:${r.fill}"></i>${r.label}</span>`)
+    .join('') + `<span><i style="background:#f3e9d2"></i>Port (2:1)</span>`;
+}
+
+async function forge() {
+  const btn = document.getElementById('forge');
+  btn.disabled = true;
+  btn.textContent = 'Charting the seas…';
+  try {
+    const res = await fetch('/generate');
+    if (!res.ok) throw new Error('server replied ' + res.status);
+    drawBoard(await res.json());
+  } catch (err) {
+    alert('Could not reach the generator: ' + err.message +
+          '\nIs server.py running? (python3 server.py)');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Forge a New Isle';
+  }
+}
+
+document.getElementById('forge').addEventListener('click', forge);
+drawLegend();
+forge(); // chart an island on first load
+</script>
+</body>
+</html>

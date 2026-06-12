@@ -1,0 +1,51 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]: A FAIR ISLAND, EVERY TIME
+    - heading "The Board Forge" [level=1] [ref=e4]
+    - generic [ref=e5]: Press the button — the generator charts a balanced isle of Catan.
+    - button "Forge a New Isle" [ref=e6] [cursor=pointer]
+  - img "Generated Catan board" [ref=e8]:
+    - generic:
+      - generic: "4"
+    - generic:
+      - generic: "2"
+    - generic:
+      - generic: "9"
+    - generic:
+      - generic: "11"
+    - generic:
+      - generic: "9"
+    - generic:
+      - generic: "4"
+    - generic:
+      - generic: "3"
+    - generic:
+      - generic: "12"
+    - generic:
+      - generic: "11"
+    - generic:
+      - generic: "8"
+    - generic:
+      - generic: "5"
+    - generic:
+      - generic: "10"
+    - generic:
+      - generic: "6"
+    - generic:
+      - generic: "6"
+    - generic:
+      - generic: "3"
+    - generic:
+      - generic: "8"
+    - generic:
+      - generic: "10"
+    - generic:
+      - generic: "5"
+  - generic [ref=e10]:
+    - generic [ref=e11]: Wheat
+    - generic [ref=e13]: Sheep
+    - generic [ref=e15]: Wood
+    - generic [ref=e17]: Brick
+    - generic [ref=e19]: Stone
+    - generic [ref=e21]: Desert
+    - generic [ref=e23]: Port (2:1)
