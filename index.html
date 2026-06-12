@@ -270,6 +270,9 @@ function drawBoard(data) {
   for (let t = 6; t < 18; t++) {
     for (const s of (t % 2 === 0 ? [2, 3, 4] : [2, 4])) EDGE_SLOTS.push([t, s]);
   }
+  // physical frame pieces assemble counter-clockwise, so the 30 slots
+  // read counter-clockwise around the coast
+  EDGE_SLOTS.reverse();
   // frame-piece dividers: the sea frame is 6 physical pieces of 5 slots
   // each — mark the boundary vertex between slot 4|5, 9|10, ... 29|0.
   const edgeEndpoints = ([tile, side]) => {
@@ -298,6 +301,15 @@ function drawBoard(data) {
       stroke: '#cfa753', 'stroke-width': 2.5, 'stroke-linecap': 'round',
       'stroke-dasharray': '1 5', class: 'port-g',
     }, svg);
+    // puzzle-tab knob: pieces are directional — each piece's tab pokes
+    // across the boundary into the next piece, going counter-clockwise.
+    const tx = uy, ty = -ux;  // counter-clockwise coast tangent
+    el('circle', {
+      cx: v[0] + ux * 15 + tx * 7, cy: v[1] + uy * 15 + ty * 7,
+      r: 4.5, fill: '#cfa753', class: 'port-g',
+    }, svg);
+    el('title', {}, svg.lastChild).textContent =
+      'frame piece boundary — tab points counter-clockwise';
   }
 
   const GENERIC = { fill: '#f3e9d2', edge: '#7a6747', label: '3:1' };
