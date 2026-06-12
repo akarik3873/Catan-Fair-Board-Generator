@@ -270,6 +270,36 @@ function drawBoard(data) {
   for (let t = 6; t < 18; t++) {
     for (const s of (t % 2 === 0 ? [2, 3, 4] : [2, 4])) EDGE_SLOTS.push([t, s]);
   }
+  // frame-piece dividers: the sea frame is 6 physical pieces of 5 slots
+  // each — mark the boundary vertex between slot 4|5, 9|10, ... 29|0.
+  const edgeEndpoints = ([tile, side]) => {
+    const [cx, cy] = toPixel(axialOf(tile));
+    const [dq, dr] = waterDir(tile, side);
+    const ox = SQ3 * S * (dq + dr / 2), oy = 1.5 * S * dr;
+    const mx = cx + ox / 2, my = cy + oy / 2;
+    const n = Math.hypot(ox, oy);
+    const px = -oy / n * (S / 2), py = ox / n * (S / 2);
+    return [[mx + px, my + py], [mx - px, my - py]];
+  };
+  for (let k = 0; k < EDGE_SLOTS.length; k += 5) {
+    // shared vertex of the last edge of one piece and the first of the next
+    const prev = edgeEndpoints(EDGE_SLOTS[(k + EDGE_SLOTS.length - 1) % EDGE_SLOTS.length]);
+    const next = edgeEndpoints(EDGE_SLOTS[k]);
+    let v = null, best = Infinity;
+    for (const a of prev) for (const b of next) {
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (d < best) { best = d; v = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
+    }
+    const len = Math.hypot(v[0], v[1]);
+    const ux = v[0] / len, uy = v[1] / len;
+    el('line', {
+      x1: v[0] + ux * 4, y1: v[1] + uy * 4,
+      x2: v[0] + ux * 26, y2: v[1] + uy * 26,
+      stroke: '#cfa753', 'stroke-width': 2.5, 'stroke-linecap': 'round',
+      'stroke-dasharray': '1 5', class: 'port-g',
+    }, svg);
+  }
+
   const GENERIC = { fill: '#f3e9d2', edge: '#7a6747', label: '3:1' };
   const edges = (data.ports || []).slice(0, EDGE_SLOTS.length).map((resource, i) =>
     ({ resource, tile: EDGE_SLOTS[i][0], side: EDGE_SLOTS[i][1] }));
