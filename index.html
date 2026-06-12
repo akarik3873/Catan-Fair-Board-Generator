@@ -308,17 +308,64 @@ function drawLegend() {
     .join('') + `<span><i style="background:#f3e9d2"></i>Port (2:1)</span>`;
 }
 
+// ---- generation backends ----
+// 1) local server.py endpoint (instant), 2) Pyodide running board.py
+//    right here in the browser (used on GitHub Pages).
+let pyodidePromise = null;
+
+function getPyodide() {
+  pyodidePromise = pyodidePromise || (async () => {
+    if (!window.loadPyodide) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('could not load Pyodide'));
+        document.head.appendChild(s);
+      });
+    }
+    const py = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/' });
+    py.setStdout({ batched: () => {} });  // board.py prints a lot of debug
+    const src = await (await fetch('board.py')).text();
+    py.FS.writeFile('board.py', src);
+    py.runPython(`
+import contextlib, io, json
+with contextlib.redirect_stdout(io.StringIO()):
+    import board
+
+def _generate():
+    with contextlib.redirect_stdout(io.StringIO()):
+        b = board.Board()
+        b.board_generator()
+    tiles = [{"id": t.tilenum, "type": t.type, "number": t.number} for t in b.board]
+    ports = [{"tile": i, "side": s, "resource": b.board[i].sides[s].tile}
+             for i in range(6, 18) for s in (2, 3, 4)
+             if isinstance(b.board[i].sides[s].tile, str)]
+    return json.dumps({"tiles": tiles, "ports": ports})
+`);
+    return py;
+  })();
+  return pyodidePromise;
+}
+
+async function generate(setStatus) {
+  try {
+    const res = await fetch('generate');
+    if (res.ok) return await res.json();
+  } catch (err) { /* no local server — fall through to Pyodide */ }
+  if (!pyodidePromise) setStatus('Rigging the engine…');
+  const py = await getPyodide();
+  return JSON.parse(py.runPython('_generate()'));
+}
+
 async function forge() {
   const btn = document.getElementById('forge');
   btn.disabled = true;
   btn.textContent = 'Charting the seas…';
   try {
-    const res = await fetch('/generate');
-    if (!res.ok) throw new Error('server replied ' + res.status);
-    drawBoard(await res.json());
+    drawBoard(await generate(msg => { btn.textContent = msg; }));
   } catch (err) {
-    alert('Could not reach the generator: ' + err.message +
-          '\nIs server.py running? (python3 server.py)');
+    alert('Could not generate a board: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Forge a New Isle';
