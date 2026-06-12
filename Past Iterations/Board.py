@@ -158,7 +158,7 @@ class CheckFunction:
         self.type_num = [[] for _ in range(13)]
         
        
-        self.functions1 = [self.two_brone, self.two_num, self.two_sight, self.next_port, self.whoop, self.two_resource, self.sight_resource, self.seven_desert]
+        self.functions1 = [self.two_brone, self.two_num, self.two_sight, self.next_port, self.whoop, self.two_resource, self.sight_resource, self.seven_desert, self.central_desert]
         # for i in range(9):
         #     var = input("add?")
         #     if var == "Y":
@@ -219,6 +219,11 @@ class CheckFunction:
         if self.type_num[tile2.number] == tile2.type:
             return False
         return True 
+    def central_desert(self, tile2):
+        if tile2.tilenum != 18 and tile2.type == "Desert":
+            #print(tile2.tilenum, smth.tile_num)
+            return False 
+        return True
     def sight_resource(self, tile2):
         if tile2.number == 6 or tile2.number == 8:
             if self.type_num[6] == tile2.type or self.type_num[8] == tile2.type:
