@@ -104,24 +104,26 @@ class Board:
             i.sides[0].adj_side = [i.sides[3],i.sides[1]]
             i.sides[3].adj_side = [i.sides[0],i.sides[5]]
 
-        # establishing the ports — shuffle piece order once, then use the
-        # checks layout for BOTH the visual and the side wiring, so each
-        # port draws on the corner between the tiles it actually touches
+        # establishing the ports — shuffle piece order once, flatten to the
+        # 30 coastal slots, then wire them onto tile sides using the SAME
+        # straight-side mapping the renderer draws with (index.html
+        # EDGE_SLOTS). Sharing one geometry is what keeps the fairness
+        # checks and the picture in agreement about where every port is.
         order = list(range(6))
         random.shuffle(order)
         self.ports = [self.ports_checks[k] for k in order]
         ports = []
         for k in order:
             ports.extend(self.ports_checks[k])
-        number = 0
-        for i in range(6, 17):
-            self.board[i].sides[2].tile  = ports[number]
-            number += 1
-            if i % 2 == 0:
-                self.board[i].sides[3].tile  = ports[number]
-                number += 1
-            self.board[i].sides[4].tile  = ports[number]
-            number += 1
+        # each frame piece is one straight board side: centred on an edge
+        # tile (odd id) and bounded by the tips of its two corner tiles
+        edge_slots = []
+        for e in range(7, 18, 2):
+            prev, nxt = e - 1, (6 if e == 17 else e + 1)
+            edge_slots += [(prev, 3), (prev, 4), (e, 2), (e, 4), (nxt, 2)]
+        edge_slots.reverse()
+        for idx, (tile, side) in enumerate(edge_slots):
+            self.board[tile].sides[side].tile = ports[idx]
 
 
 
