@@ -33,11 +33,11 @@ class Board:
         # edges, so the end 2:1s reach a third slot) — for the checks
         self.ports_checks = [
                 ["Sheep", "Sheep", "Sheep", "3:1",  "3:1"],    # piece 1
-                ["Water", "Water", "3:1",  "3:1",  "Water"],   # piece 2
+                ["Water", "3:1",   "3:1",   "3:1",  "Water"],  # piece 2
                 ["Brick", "Brick", "Brick", "3:1",  "3:1"],    # piece 3
-                ["Water", "Water", "Wood",  "Wood", "Water"],  # piece 4
+                ["Water", "Wood",  "Wood",  "Wood", "Water"],  # piece 4
                 ["Wheat", "Wheat", "Wheat", "3:1",  "3:1"],    # piece 5
-                ["Water", "Water", "Stone", "Stone", "Water"]] # piece 6
+                ["Water", "Stone", "Stone", "Stone", "Water"]] # piece 6
 
 
         #creates the board
@@ -104,11 +104,12 @@ class Board:
             i.sides[0].adj_side = [i.sides[3],i.sides[1]]
             i.sides[3].adj_side = [i.sides[0],i.sides[5]]
 
-        # establishing the ports — shuffle piece order once so the visual
-        # and check arrays stay in sync, then wire the check slots to sides
+        # establishing the ports — shuffle piece order once, then use the
+        # checks layout for BOTH the visual and the side wiring, so each
+        # port draws on the corner between the tiles it actually touches
         order = list(range(6))
         random.shuffle(order)
-        self.ports = [self.ports_visual[k] for k in order]
+        self.ports = [self.ports_checks[k] for k in order]
         ports = []
         for k in order:
             ports.extend(self.ports_checks[k])

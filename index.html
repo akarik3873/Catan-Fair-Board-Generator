@@ -266,12 +266,17 @@ function drawBoard(data) {
   // ---- ports ----
   // data.ports lists the 30 coastal edges in ring order, starting at
   // tile 6 side 2. Runs of the same resource form one multi-dock port.
+  // Each frame piece is a long straight border running along one of the 6
+  // board edges — centred on an edge tile (odd id) and bounded by the tips
+  // of its two corner tiles. Build the 30 slots in 6 straight-side groups
+  // of 5, so a piece only ever lies on one long straight stretch and the
+  // piece boundaries fall at the corner tips.
   const EDGE_SLOTS = [];
-  for (let t = 6; t < 18; t++) {
-    for (const s of (t % 2 === 0 ? [2, 3, 4] : [2, 4])) EDGE_SLOTS.push([t, s]);
+  for (let e = 7; e <= 17; e += 2) {          // edge tile mid-way along each side
+    const prev = e - 1, next = e === 17 ? 6 : e + 1;
+    EDGE_SLOTS.push([prev, 3], [prev, 4], [e, 2], [e, 4], [next, 2]);
   }
-  // physical frame pieces assemble counter-clockwise, so the 30 slots
-  // read counter-clockwise around the coast
+  // assemble counter-clockwise to match the physical frame
   EDGE_SLOTS.reverse();
   // frame-piece dividers: the sea frame is 6 physical pieces of 5 slots
   // each — mark the boundary vertex between slot 4|5, 9|10, ... 29|0.
@@ -328,33 +333,38 @@ function drawBoard(data) {
     const g = el('g', { class: 'port-g', style: `animation-delay:${delay}ms` }, svg);
     delay += 90;
 
-    let lx = 0, ly = 0;
-    for (const p of run) {
-      const [cx, cy] = toPixel(axialOf(p.tile));
-      const [dq, dr] = waterDir(p.tile, p.side);
-      const ox = SQ3 * S * (dq + dr / 2), oy = 1.5 * S * dr;
-      // dock line: from hex edge out into the sea
-      el('line', {
-        x1: cx + ox * 0.46, y1: cy + oy * 0.46,
-        x2: cx + ox * 0.78, y2: cy + oy * 0.78,
-        stroke: '#e8d9b5', 'stroke-width': 3, 'stroke-linecap': 'round',
-      }, g);
-      lx += cx + ox * 0.92;
-      ly += cy + oy * 0.92;
-    }
-    lx /= run.length; ly /= run.length;
+    // a port serves the central coastal edge of its run: the symbol floats
+    // just off that outer edge, and two docks reach down to the edge's two
+    // corner points — the settlement spots between the resource tiles that
+    // can trade at it
+    const mid = run[Math.floor(run.length / 2)];
+    const [a, b] = edgeEndpoints([mid.tile, mid.side]);
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const [tcx, tcy] = toPixel(axialOf(mid.tile));
+    let ox = mx - tcx, oy = my - tcy;
+    const on = Math.hypot(ox, oy); ox /= on; oy /= on;
+    const px = mx + ox * 20, py = my + oy * 20;   // symbol out in the sea
 
-    el('circle', { cx: lx, cy: ly, r: 13, fill: '#f3e9d2', stroke: res.edge, 'stroke-width': 2.5 }, g);
+    // two docks from the sea symbol down to the two corner points
+    for (const v of [a, b]) {
+      el('line', {
+        x1: px, y1: py, x2: v[0], y2: v[1],
+        stroke: '#e8d9b5', 'stroke-width': 2.5, 'stroke-linecap': 'round',
+      }, g);
+      el('circle', { cx: v[0], cy: v[1], r: 2.8, fill: '#e8d9b5' }, g);
+    }
+
+    el('circle', { cx: px, cy: py, r: 12, fill: '#f3e9d2', stroke: res.edge, 'stroke-width': 2.5 }, g);
     if (generic) {
       const t31 = el('text', {
-        x: lx, y: ly + 1,
+        x: px, y: py + 1,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
         'font-family': 'Alegreya, serif', 'font-weight': 700,
         'font-size': 9.5, fill: '#5b4a2a',
       }, g);
       t31.textContent = run[0].resource;
     } else {
-      el('circle', { cx: lx, cy: ly, r: 7.5, fill: res.fill, stroke: res.edge, 'stroke-width': 1 }, g);
+      el('circle', { cx: px, cy: py, r: 7, fill: res.fill, stroke: res.edge, 'stroke-width': 1 }, g);
     }
     const title = el('title', {}, g);
     title.textContent = generic ? run[0].resource + ' port'
